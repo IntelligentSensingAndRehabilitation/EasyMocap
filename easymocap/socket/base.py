@@ -23,13 +23,16 @@ class BaseSocket:
                     socket.AF_INET, socket.SOCK_STREAM)
         serversocket.bind((host, port))
         serversocket.listen(1)
+        serversocket.settimeout(1.0)
         self.serversocket = serversocket
         self.queue = Queue()
+        self.stop = False
         self.t = Thread(target=self.run)
         self.t.start()
         self.debug = debug
         self.disconnect = False
-    
+
+
     @staticmethod
     def recvLine(sock):
         flag = True
@@ -52,31 +55,36 @@ class BaseSocket:
         return result.decode('ascii')
 
     def run(self):
-        while True:
-            clientsocket, addr = self.serversocket.accept()
-            print("[Info] Connect: %s" % str(addr))
+        while not self.stop:
+            try:
+                clientsocket, addr = self.serversocket.accept()
+            except socket.timeout as e:
+                print(e)
+                continue
+            if self.debug: log("[Info] Connect: %s" % str(addr))
             self.disconnect = False
             while True:
                 flag, l = self.recvLine(clientsocket)
                 if not flag:
-                    print("[Info] Disonnect: %s" % str(addr))
+                    if self.debug: log(f"[Info] Disonnect: {str(addr)} {self.stop}")
                     self.disconnect = True
                     break
                 data = self.recvAll(clientsocket, l)
-                if self.debug:log('[Info] Recv data')
+                if self.debug: log('[Info] Recv data')
                 self.queue.put(data)
             clientsocket.close()
-    
+
     def update(self):
         time.sleep(1)
         while not self.queue.empty():
             log('update')
             data = self.queue.get()
             self.main(data)
-    
+
     def main(self, datas):
         print(datas)
 
-    def __del__(self):
+    def stop_thread(self):
         self.serversocket.close()
+        self.stop = True
         self.t.join()
