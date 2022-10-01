@@ -46,7 +46,6 @@ def create_ground(**kwargs):
 def create_coord(camera = [0,0,0], radius=1, scale=1):
     camera_frame = TriangleMesh.create_coordinate_frame(
             size=radius, origin=camera)
-    camera_frame.scale(scale)
     return camera_frame
 
 def create_bbox(min_bound=(-3., -3., 0), max_bound=(3., 3., 2), flip=False):
