@@ -18,7 +18,7 @@ packages = [
     "myeasymocap"
 ]
 dependencies = [
-    "chumpy==0.70",
+    "chumpy",
     "func-timeout>=4.3.5",
     "gdown>=5.2.0",
     "ipdb>=0.13.13",
@@ -34,6 +34,9 @@ dependencies = [
     "ultralytics>=8.3.23",
     "yacs>=0.1.8",
 ]
+
+[tool.uv.sources]
+chumpy = { git = "https://github.com/IntelligentSensingAndRehabilitation/chumpy" }
 
 [project.scripts]
 emc = "apps.mocap.run:main_entrypoint"
