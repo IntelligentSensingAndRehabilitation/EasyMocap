@@ -31,7 +31,6 @@ dependencies = [
     "tensorboard>=2.15",
     "termcolor>=2.5.0",
     "tqdm>=4.66.5",
-    "ultralytics>=8.3.23",
     "yacs>=0.1.8",
 ]
 
