@@ -6,7 +6,7 @@ authors = [
     { name = "Qing Shuai", email = "s_q@zju.edu.cn" }
 ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 packages = [
     "easymocap",
     "easymocap.dataset",
