@@ -111,7 +111,7 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
                 proposal[outlier_view] = -1
                 proposals.append(proposal)
         elapsed = time.time() - frame_start
-        if elapsed > 5.0 or initial_proposal_count > 100:
+        if elapsed > 10.0:
             print(f'[associate] slow: {elapsed:.1f}s, initial_proposals={initial_proposal_count}, evals={eval_count}')
         if len(results) == 0:
             continue
