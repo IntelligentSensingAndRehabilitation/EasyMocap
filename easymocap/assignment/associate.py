@@ -5,6 +5,7 @@
   @ LastEditTime: 2021-06-25 11:50:10
   @ FilePath: /EasyMocapRelease/easymocap/assignment/associate.py
 '''
+import time
 import numpy as np
 from ..mytools.reconstruction import batch_triangulate, projectN3
 from ..config import load_object
@@ -44,13 +45,16 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
     sortidx = np.argsort(-views_cnt)
     p2dAssigned = np.zeros(n2D, dtype=int) - 1
     indices_zero = np.zeros((nViews), dtype=int) - 1
+    MAX_PROPOSALS = 500
+    MAX_EVALUATIONS = 500
     for idx in sortidx:
         if p2dAssigned[idx] != -1:
             continue
+        frame_start = time.time()
         proposals = [indices_zero.copy()]
         for nv in range(nViews):
-            match = np.where( 
-                (affinity[idx, dimGroups[nv]:dimGroups[nv+1]] > 0.) 
+            match = np.where(
+                (affinity[idx, dimGroups[nv]:dimGroups[nv+1]] > 0.)
               & (p2dAssigned[dimGroups[nv]:dimGroups[nv+1]] == -1) )[0]
             if len(match) > 0:
                 match = match + dimGroups[nv]
@@ -64,13 +68,18 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
                         p[nv] = col
                         proposals_new.append(p)
                 proposals += proposals_new
+        initial_proposal_count = len(proposals)
+        if len(proposals) > MAX_PROPOSALS:
+            proposals.sort(key=lambda p: -np.sum(p != -1))
+            proposals = proposals[:MAX_PROPOSALS]
         results = []
-        while len(proposals) > 0:
+        eval_count = 0
+        while len(proposals) > 0 and eval_count < MAX_EVALUATIONS:
+            eval_count += 1
             proposal = proposals.pop()
             # less than two views
             if (proposal != -1).sum() < cfg.min_views:
                 continue
-            # print('[associate] pop proposal: {}'.format(proposal))
             keypoints2d, bboxes, Pused, Vused = set_keypoints2d(proposal, annots, Pall, dimGroups)
             keypoints3d = batch_triangulate(keypoints2d, Pused)
             kptsRepro = projectN3(keypoints3d, Pused)
@@ -89,7 +98,6 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
                     flag = False
                     break
             if flag:
-                # print('[associate]: view {}'.format(Vused))
                 results.append({
                     'indices': proposal,
                     'keypoints2d': keypoints2d,
@@ -102,6 +110,9 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
                 outlier_view = Vused[err_view.argmax()]
                 proposal[outlier_view] = -1
                 proposals.append(proposal)
+        elapsed = time.time() - frame_start
+        if elapsed > 10.0:
+            print(f'[associate] slow: {elapsed:.1f}s, initial_proposals={initial_proposal_count}, evals={eval_count}')
         if len(results) == 0:
             continue
         if len(results) > 1:
